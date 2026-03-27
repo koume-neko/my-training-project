@@ -1,0 +1,1661 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>なにたべる？ — 今日の献立を決めよう</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* ===== Custom Properties ===== */
+    :root {
+      --bg:          #FFFFFF;
+      --surface:     #FFFFFF;
+      --primary:     #F1642E;
+      --primary-h:   #d95424;
+      --primary-lt:  #fef0e8;
+      --text:        #504E76;
+      --muted:       #9391b0;
+      --border:      #e8e3cc;
+      --lavender:    #C4C3E3;
+      --sage:        #A3B565;
+      --peach:       #FCDD9D;
+      --dark:        #504E76;
+      --radius:      20px;
+      --transition:  0.2s ease;
+      --font:        'Montserrat', -apple-system, 'Hiragino Sans', sans-serif;
+      /* Neumorphic shadows — tuned for #FFFFFF base */
+      --neu-out: -6px -6px 14px rgba(255,255,255,1), 6px 6px 18px rgba(180,165,110,0.45);
+      --neu-in:  inset -4px -4px 10px rgba(255,255,255,1), inset 4px 4px 12px rgba(180,165,110,0.40);
+      --neu-sm:  -4px -4px 10px rgba(255,255,255,1), 4px 4px 12px rgba(180,165,110,0.36);
+    }
+
+  <style>
+    /* ===== Reset ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font);
+      background-color: var(--bg);
+      background-image:
+        linear-gradient(rgba(241, 100, 46, 0.10) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(241, 100, 46, 0.10) 1px, transparent 1px);
+      background-size: 28px 28px;
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 16px 56px;
+    }
+
+    /* ===== App header ===== */
+    .app-header {
+      text-align: center;
+      padding: 52px 16px 20px;
+      width: 100%;
+      max-width: 560px;
+      position: relative;
+    }
+    .app-logo { display: none; }
+
+    /* Floating illustrations */
+    .header-illus {
+      position: absolute;
+      pointer-events: none;
+      user-select: none;
+    }
+    .header-illus--tomato   { top: -4px;  left:  2%;  width: 72px; transform: rotate(-12deg); }
+    .header-illus--broccoli { top:  2px;  right: 4%;  width: 66px; transform: rotate(10deg); }
+    .header-illus--garlic   { bottom: 24px; left: 6%;  width: 52px; transform: rotate(8deg);  opacity: .85; }
+    .header-illus--onion    { bottom: 18px; right: 6%; width: 60px; transform: rotate(-8deg); }
+    .app-name {
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: 0.05em;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+    .app-tagline {
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .app-divider { display: none; }
+
+    /* ===== App shell ===== */
+    #app { width: 100%; max-width: 560px; }
+
+    /* ===== Progress bar ===== */
+    .progress-bar { display: flex; gap: 6px; margin-bottom: 24px; }
+    .progress-bar span {
+      flex: 1; height: 4px; border-radius: 99px;
+      background: var(--lavender);
+      opacity: 0.3;
+      transition: background var(--transition), opacity var(--transition);
+    }
+    .progress-bar span.done   { background: var(--primary); opacity: 1; }
+    .progress-bar span.active { background: var(--primary); opacity: 0.45; }
+
+    /* ===== Step card ===== */
+    .step {
+      background: #FFFDF5;
+      border-radius: var(--radius);
+      box-shadow: var(--neu-out);
+      padding: 32px 28px;
+      animation: fadeUp 0.25s ease;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .step-label {
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--primary);
+      background: var(--primary-lt);
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 12px;
+      border-radius: 99px;
+      margin-bottom: 12px;
+    }
+    .step-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      line-height: 1.4;
+      margin-bottom: 6px;
+      letter-spacing: -0.01em;
+    }
+    .step-sub {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-bottom: 24px;
+      line-height: 1.7;
+      font-weight: 500;
+    }
+
+    /* ===== Option grid ===== */
+    .options-grid { display: grid; gap: 12px; }
+    .options-grid.col2 { grid-template-columns: 1fr 1fr; }
+    .options-grid.col3 { grid-template-columns: 1fr 1fr 1fr; }
+
+    /* ===== Option card (neumorphic) ===== */
+    .option-card {
+      background: #FFFDF5;
+      border: none;
+      border-radius: 16px;
+      padding: 20px 12px;
+      cursor: pointer;
+      text-align: center;
+      box-shadow: var(--neu-out);
+      transition: box-shadow var(--transition), transform 0.1s;
+      user-select: none;
+    }
+    .option-card:hover { box-shadow: -8px -8px 18px rgba(255,255,255,1), 8px 8px 22px rgba(180,165,110,0.60); }
+    .option-card:active, .option-card.selected { box-shadow: var(--neu-in); }
+    .option-card.selected .label { color: var(--primary); font-weight: 700; }
+    .option-card:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; border-radius: 16px; }
+    .option-card .icon  { font-size: 2.2rem; margin-bottom: 8px; display: block; }
+    .option-card .label { font-size: 0.85rem; font-weight: 600; color: var(--text); }
+    .option-card .meta  { font-size: 0.68rem; color: var(--muted); margin-top: 4px; font-weight: 500; }
+
+    /* ===== Ingredient chips ===== */
+    .ing-group-title {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin: 20px 0 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .ing-group-title::after {
+      content: none;
+      border-radius: 99px;
+    }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip {
+      font-family: var(--font);
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 7px 16px;
+      border-radius: 99px;
+      border: none;
+      background: var(--bg);
+      color: var(--text);
+      cursor: pointer;
+      box-shadow: var(--neu-sm);
+      transition: box-shadow var(--transition), background var(--transition), color var(--transition);
+      user-select: none;
+    }
+    .chip:hover { box-shadow: -5px -5px 12px rgba(255,255,255,1), 5px 5px 14px rgba(180,165,110,0.55); }
+    .chip.selected {
+      box-shadow: var(--neu-in);
+      background: var(--lavender);
+      color: var(--dark);
+      font-weight: 700;
+    }
+    .chip:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+
+    .custom-row { display: flex; gap: 8px; margin-top: 16px; }
+    .custom-row input {
+      flex: 1;
+      font-family: var(--font);
+      font-size: 0.85rem;
+      font-weight: 500;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 99px;
+      background: var(--bg);
+      color: var(--text);
+      outline: none;
+      box-shadow: var(--neu-in);
+    }
+    .custom-row input::placeholder { color: var(--muted); }
+    .custom-row button {
+      font-family: var(--font);
+      font-size: 0.82rem;
+      font-weight: 700;
+      padding: 10px 20px;
+      border-radius: 99px;
+      border: none;
+      background: var(--primary);
+      color: #fff;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(241,100,46,0.3);
+      transition: background var(--transition), box-shadow var(--transition);
+    }
+    .custom-row button:hover { background: var(--primary-h); box-shadow: 0 6px 18px rgba(241,100,46,0.4); }
+
+    /* ===== Navigation buttons ===== */
+    .nav-row { display: flex; gap: 10px; margin-top: 28px; }
+    .btn-back {
+      font-family: var(--font);
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 12px 20px;
+      border-radius: 99px;
+      border: none;
+      background: var(--bg);
+      color: var(--muted);
+      cursor: pointer;
+      box-shadow: var(--neu-sm);
+      transition: box-shadow var(--transition), color var(--transition);
+    }
+    .btn-back:hover { box-shadow: var(--neu-in); color: var(--text); }
+    .btn-next {
+      flex: 1;
+      font-family: var(--font);
+      font-size: 0.95rem;
+      font-weight: 700;
+      padding: 14px 24px;
+      border-radius: 99px;
+      border: none;
+      background: var(--primary);
+      color: #fff;
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      box-shadow: 0 6px 20px rgba(241,100,46,0.35);
+      transition: background var(--transition), box-shadow var(--transition), transform 0.1s;
+    }
+    .btn-next:hover   { background: var(--primary-h); box-shadow: 0 8px 26px rgba(241,100,46,0.45); transform: translateY(-1px); }
+    .btn-next:active  { transform: translateY(0); }
+    .btn-next:disabled{ opacity: 0.35; cursor: not-allowed; box-shadow: none; transform: none; }
+    .btn-next:focus-visible, .btn-back:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
+
+    /* ===== Results grid ===== */
+    .results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 8px; }
+    .dish-card {
+      background: #FFFDF5;
+      border: none;
+      border-radius: 20px;
+      padding: 22px 14px 18px;
+      cursor: pointer;
+      text-align: center;
+      box-shadow: var(--neu-out);
+      transition: box-shadow var(--transition), transform 0.15s;
+      position: relative;
+    }
+    .dish-card:hover  { box-shadow: -8px -8px 20px rgba(255,255,255,1), 8px 8px 24px rgba(180,165,110,0.60); transform: translateY(-3px); }
+    .dish-card:active { box-shadow: var(--neu-in); transform: translateY(0); }
+    .dish-card:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; border-radius: 20px; }
+    .dish-card .d-emoji { font-size: 3rem; display: block; margin-bottom: 10px; }
+    .dish-card .d-name  { font-size: 0.88rem; font-weight: 700; margin-bottom: 6px; letter-spacing: 0.01em; }
+    .dish-card .d-time  {
+      font-size: 0.68rem; font-weight: 600;
+      background: var(--peach);
+      color: var(--text);
+      border-radius: 99px;
+      padding: 3px 10px;
+      display: inline-block;
+    }
+    .dish-card .d-match {
+      position: absolute; top: 10px; right: 10px;
+      font-size: 0.62rem; font-weight: 700;
+      background: var(--sage);
+      color: #fff;
+      border-radius: 99px;
+      padding: 3px 8px;
+    }
+    .no-results { text-align: center; padding: 32px 0; color: var(--muted); }
+    .no-results .nr-icon { font-size: 3rem; display: block; margin-bottom: 12px; }
+
+    /* ===== Modal ===== */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(80,78,118,0.28);
+      display: flex; align-items: flex-end; justify-content: center;
+      z-index: 100;
+      animation: fadeIn 0.18s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .modal-sheet {
+      background: #FFFDF5;
+      border-radius: 24px 24px 0 0;
+      padding: 28px 24px 44px;
+      width: 100%; max-width: 560px; max-height: 85vh;
+      overflow-y: auto;
+      animation: slideUp 0.22s ease;
+      box-shadow: 0 -6px 32px rgba(80,78,118,0.14);
+    }
+    @keyframes slideUp { from { transform: translateY(40px); } to { transform: translateY(0); } }
+    .modal-close {
+      float: right;
+      background: #FFFDF5;
+      border: none;
+      border-radius: 50%;
+      width: 36px; height: 36px;
+      cursor: pointer;
+      box-shadow: var(--neu-sm);
+      font-size: 1rem;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--muted);
+      transition: box-shadow var(--transition), color var(--transition);
+    }
+    .modal-close:hover { box-shadow: var(--neu-in); color: var(--text); }
+    .modal-close:focus-visible { outline: 3px solid var(--primary); }
+    .modal-emoji { font-size: 4rem; display: block; margin: 8px 0 12px; }
+    .modal-name  { font-size: 1.45rem; font-weight: 800; margin-bottom: 6px; letter-spacing: -0.01em; }
+    .modal-meta  { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+    .modal-tag   {
+      font-size: 0.72rem; font-weight: 600;
+      padding: 4px 14px; border-radius: 99px;
+      background: var(--bg);
+      box-shadow: var(--neu-sm);
+      color: var(--muted);
+    }
+    .modal-section-title {
+      font-size: 0.68rem; font-weight: 700;
+      letter-spacing: 0.12em; color: var(--muted);
+      text-transform: uppercase;
+      margin: 22px 0 10px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .modal-section-title::after {
+      content: ''; flex: 1; height: 1.5px;
+      background: var(--lavender); opacity: 0.5; border-radius: 99px;
+    }
+    .ing-list { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; }
+    .ing-list li {
+      font-size: 0.8rem; font-weight: 500;
+      padding: 5px 14px; border-radius: 99px;
+      background: var(--bg); box-shadow: var(--neu-sm); border: none;
+    }
+    .ing-list li.have { background: var(--sage); color: #fff; box-shadow: none; font-weight: 700; }
+    .recipe-steps { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+    .recipe-steps li { display: flex; gap: 12px; font-size: 0.86rem; line-height: 1.6; }
+    .step-num {
+      flex-shrink: 0; width: 26px; height: 26px;
+      background: var(--primary); color: #fff;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 0.68rem; font-weight: 800; margin-top: 1px;
+    }
+
+    /* ===== Mood chips section ===== */
+    .mood-section-title {
+      font-size: 0.68rem; font-weight: 700;
+      color: var(--muted); letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin: 24px 0 10px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .mood-section-title::after { content: none; }
+
+    /* ===== External link buttons ===== */
+    .ext-link-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px; }
+    .ext-link-btn {
+      display: flex; align-items: center; gap: 8px;
+      padding: 12px 14px;
+      border-radius: 14px; border: none;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 0.8rem; font-weight: 600;
+      text-decoration: none;
+      box-shadow: var(--neu-sm);
+      transition: box-shadow var(--transition), color var(--transition);
+    }
+    .ext-link-btn:hover { box-shadow: var(--neu-in); color: var(--primary); }
+    .ext-link-btn:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
+    .ext-link-icon { font-size: 1.1rem; flex-shrink: 0; }
+
+    /* ===== Restart button ===== */
+    .btn-restart {
+      width: 100%; margin-top: 20px;
+      font-family: var(--font);
+      font-size: 0.82rem; font-weight: 600;
+      padding: 13px; border-radius: 99px; border: none;
+      background: var(--bg); color: var(--muted);
+      cursor: pointer;
+      box-shadow: var(--neu-sm);
+      letter-spacing: 0.04em;
+      transition: box-shadow var(--transition), color var(--transition);
+    }
+    .btn-restart:hover { box-shadow: var(--neu-in); color: var(--primary); }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 360px) {
+      .results-grid { grid-template-columns: 1fr; }
+      .options-grid.col3 { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header class="app-header" role="banner">
+
+    <!-- トマト (cross-section) -->
+    <svg class="header-illus header-illus--tomato" viewBox="0 0 90 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <!-- stem leaves -->
+      <path d="M42 18 C40 9 35 6 36 13" fill="#7DA840"/>
+      <path d="M48 18 C50 9 55 6 54 13" fill="#8CB850"/>
+      <path d="M42 20 C42 11 48 11 48 20" fill="#A3C860"/>
+      <!-- stem -->
+      <rect x="43.5" y="16" width="3" height="8" rx="1.5" fill="#6A9030"/>
+      <!-- outer body -->
+      <circle cx="45" cy="58" r="38" fill="#D04B38"/>
+      <!-- facet mid -->
+      <path d="M45 58 L45 20 A38 38 0 0 1 78.9 77.5 Z" fill="#BB3D2C"/>
+      <path d="M45 58 L78.9 77.5 A38 38 0 0 1 11.1 77.5 Z" fill="#C84535"/>
+      <path d="M45 58 L11.1 77.5 A38 38 0 0 1 45 20 Z" fill="#D95040"/>
+      <!-- inner lighter ring -->
+      <circle cx="45" cy="58" r="24" fill="#E87060"/>
+      <!-- inner ring facets -->
+      <path d="M45 58 L45 34 A24 24 0 0 1 65.8 70 Z" fill="#D86050"/>
+      <path d="M45 58 L65.8 70 A24 24 0 0 1 24.2 70 Z" fill="#E06858"/>
+      <path d="M45 58 L24.2 70 A24 24 0 0 1 45 34 Z" fill="#EE7868"/>
+      <!-- center -->
+      <circle cx="45" cy="58" r="10" fill="#F49080"/>
+      <!-- seed dividers -->
+      <g stroke="#FEEAA0" stroke-width="1.2" opacity="0.85">
+        <line x1="45" y1="20" x2="45" y2="58"/>
+        <line x1="72" y1="39" x2="45" y2="58"/>
+        <line x1="79" y1="68" x2="45" y2="58"/>
+        <line x1="67" y1="90" x2="45" y2="58"/>
+        <line x1="23" y1="90" x2="45" y2="58"/>
+        <line x1="11" y1="68" x2="45" y2="58"/>
+        <line x1="18" y1="39" x2="45" y2="58"/>
+      </g>
+      <!-- seed dots -->
+      <circle cx="45" cy="25" r="2.2" fill="#FEEAA0" opacity="0.75"/>
+      <circle cx="69" cy="42" r="2.2" fill="#FEEAA0" opacity="0.75"/>
+      <circle cx="74" cy="70" r="2.2" fill="#FEEAA0" opacity="0.75"/>
+      <circle cx="58" cy="89" r="2.2" fill="#FEEAA0" opacity="0.75"/>
+      <circle cx="32" cy="89" r="2.2" fill="#FEEAA0" opacity="0.75"/>
+      <circle cx="16" cy="70" r="2.2" fill="#FEEAA0" opacity="0.75"/>
+      <circle cx="21" cy="42" r="2.2" fill="#FEEAA0" opacity="0.75"/>
+    </svg>
+
+    <!-- ブロッコリー -->
+    <svg class="header-illus header-illus--broccoli" viewBox="0 0 80 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <!-- stems -->
+      <rect x="36" y="60" width="8" height="36" rx="4" fill="#C0D890"/>
+      <rect x="24" y="72" width="6" height="22" rx="3" fill="#B0CC80" transform="rotate(-12 27 83)"/>
+      <rect x="50" y="72" width="6" height="22" rx="3" fill="#B0CC80" transform="rotate(12 53 83)"/>
+      <!-- stem join -->
+      <ellipse cx="40" cy="63" rx="10" ry="5" fill="#A8C878"/>
+      <!-- floret base large -->
+      <ellipse cx="40" cy="38" rx="34" ry="28" fill="#5A9838"/>
+      <!-- floret clusters -->
+      <circle cx="40" cy="26" r="16" fill="#4E8C30"/>
+      <circle cx="22" cy="36" r="14" fill="#528E32"/>
+      <circle cx="58" cy="36" r="14" fill="#4A8428"/>
+      <circle cx="30" cy="48" r="12" fill="#56923A"/>
+      <circle cx="50" cy="48" r="12" fill="#4E8830"/>
+      <circle cx="40" cy="50" r="10" fill="#528C34"/>
+      <!-- highlight bumps -->
+      <circle cx="34" cy="20" r="7" fill="#68AA44"/>
+      <circle cx="48" cy="22" r="6" fill="#60A03C"/>
+      <circle cx="24" cy="30" r="7" fill="#64A840"/>
+      <circle cx="55" cy="30" r="7" fill="#5C9C38"/>
+      <circle cx="18" cy="42" r="6" fill="#5EA040"/>
+      <circle cx="62" cy="42" r="6" fill="#58983A"/>
+      <!-- top highlight -->
+      <circle cx="40" cy="18" r="5" fill="#78BA54"/>
+      <circle cx="32" cy="14" r="4" fill="#72B24E"/>
+      <circle cx="48" cy="14" r="4" fill="#70B04C"/>
+    </svg>
+
+    <!-- にんにく -->
+    <svg class="header-illus header-illus--garlic" viewBox="0 0 70 90" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <!-- stem -->
+      <path d="M35 8 C33 2 31 0 33 6" fill="#A8C060" opacity="0.9"/>
+      <path d="M35 8 C37 2 39 0 37 6" fill="#98B050"/>
+      <line x1="35" y1="6" x2="35" y2="16" stroke="#8AA040" stroke-width="2.5" stroke-linecap="round"/>
+      <!-- bulb base shadow -->
+      <ellipse cx="35" cy="74" rx="26" ry="8" fill="#C8C0A0" opacity="0.4"/>
+      <!-- main bulb body -->
+      <path d="M11 55 C11 30 18 14 35 14 C52 14 59 30 59 55 C59 70 50 78 35 78 C20 78 11 70 11 55 Z" fill="#EEEADA"/>
+      <!-- bulb facets / cloves suggestion -->
+      <path d="M35 14 C28 14 22 22 20 36 C19 44 20 52 22 58 C25 68 30 75 35 78 C35 78 35 40 35 14 Z" fill="#E4E0CC"/>
+      <path d="M35 14 C42 14 48 22 50 36 C51 44 50 52 48 58 C45 68 40 75 35 78 C35 78 35 40 35 14 Z" fill="#F0ECD8"/>
+      <!-- texture ribs -->
+      <g stroke="#D4CEB0" stroke-width="1" opacity="0.7">
+        <path d="M35 16 C35 16 35 70 35 76" />
+        <path d="M28 17 C26 26 25 40 26 55 C27 64 30 72 32 76"/>
+        <path d="M22 22 C19 32 18 46 20 58 C21 65 24 72 27 77"/>
+        <path d="M42 17 C44 26 45 40 44 55 C43 64 40 72 38 76"/>
+        <path d="M48 22 C51 32 52 46 50 58 C49 65 46 72 43 77"/>
+      </g>
+      <!-- bottom root hint -->
+      <path d="M28 78 C27 82 25 84 24 83" stroke="#C8C0A0" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+      <path d="M35 79 C35 83 35 85 35 84" stroke="#C8C0A0" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+      <path d="M42 78 C43 82 45 84 46 83" stroke="#C8C0A0" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+    </svg>
+
+    <!-- たまねぎ (half cross-section) -->
+    <svg class="header-illus header-illus--onion" viewBox="0 0 88 88" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <!-- stem top -->
+      <path d="M36 8 C30 2 26 4 30 10" fill="#A8C060"/>
+      <path d="M44 6 C44 0 48 0 46 8" fill="#9AB850"/>
+      <path d="M40 10 C38 2 44 0 44 8" fill="#B0C868"/>
+      <!-- outer skin -->
+      <path d="M10 44 C10 22 24 6 44 6 C64 6 78 22 78 44 C78 64 64 80 44 80 C24 80 10 64 10 44 Z" fill="#C85A28"/>
+      <!-- outer facets -->
+      <path d="M44 6 C64 6 78 22 78 44 C78 58 70 70 58 76 L44 6Z" fill="#B84E20"/>
+      <path d="M44 6 C24 6 10 22 10 44 C10 58 18 70 30 76 L44 6Z" fill="#D86430"/>
+      <!-- mid layer -->
+      <path d="M18 48 C18 28 30 14 44 14 C58 14 70 28 70 48 C70 62 60 74 44 74 C28 74 18 62 18 48 Z" fill="#E07840"/>
+      <!-- mid facets -->
+      <path d="M44 14 C58 14 70 28 70 48 C70 60 64 70 55 74 L44 14Z" fill="#D06C36"/>
+      <path d="M44 14 C30 14 18 28 18 48 C18 60 24 70 33 74 L44 14Z" fill="#EA8048"/>
+      <!-- inner layer -->
+      <path d="M26 50 C26 34 34 22 44 22 C54 22 62 34 62 50 C62 60 56 68 44 68 C32 68 26 60 26 50 Z" fill="#F0A060"/>
+      <!-- inner layer facets -->
+      <path d="M44 22 C54 22 62 34 62 50 C62 58 58 64 52 68 L44 22Z" fill="#E89050"/>
+      <path d="M44 22 C34 22 26 34 26 50 C26 58 30 64 36 68 L44 22Z" fill="#F8A868"/>
+      <!-- inner 2 -->
+      <path d="M32 52 C32 40 37 30 44 30 C51 30 56 40 56 52 C56 60 51 66 44 66 C37 66 32 60 32 52 Z" fill="#FCCC90"/>
+      <!-- inner facets -->
+      <path d="M44 30 C51 30 56 40 56 52 C56 58 53 63 49 65 L44 30Z" fill="#F4BC80"/>
+      <path d="M44 30 C37 30 32 40 32 52 C32 58 35 63 39 65 L44 30Z" fill="#FFD498"/>
+      <!-- center core -->
+      <ellipse cx="44" cy="52" rx="8" ry="10" fill="#FFF0D8"/>
+      <!-- cut line across bottom (flat cut face) -->
+      <path d="M10 44 C10 66 24 82 44 82 C64 82 78 66 78 44" fill="none"/>
+    </svg>
+
+    <p class="app-name">なにたべる？</p>
+    <p class="app-tagline">今日のごはん、一緒に決めましょう</p>
+    <div class="app-divider" aria-hidden="true"></div>
+  </header>
+
+  <div id="app" role="main"></div>
+
+  <!-- Modal container (injected dynamically) -->
+  <div id="modal-root" aria-live="polite"></div>
+
+  <script>
+    // ============================================================
+    // DATA
+    // ============================================================
+    const MEAL_TIMES = [
+      { id: 'breakfast', label: '朝ごはん',       icon: '🌅', desc: '' },
+      { id: 'lunch',     label: 'お昼ごはん',     icon: '☀️', desc: '' },
+      { id: 'dinner',    label: '夜ごはん',       icon: '🌙', desc: '' },
+      { id: 'snack',     label: 'おやつ・軽食',   icon: '🍪', desc: '' },
+    ];
+
+    const ENERGY_LEVELS = [
+      { id: 1, label: 'ぐったり',     icon: '😮‍💨', maxMin: 5,   desc: '5分以内でできるもの' },
+      { id: 2, label: 'おつかれぎみ', icon: '🥱',   maxMin: 20,  desc: '20分以内でできるもの' },
+      { id: 3, label: 'げんき',       icon: '😊',   maxMin: 45,  desc: '45分以内でできるもの' },
+      { id: 4, label: 'やるきMAX！',  icon: '😄',   maxMin: 999, desc: '60分以上もOK！' },
+    ];
+
+    const GENRES = [
+      { id: 'rice',    label: 'ご飯もの', icon: '🍚' },
+      { id: 'noodles', label: '麺類',     icon: '🍜' },
+      { id: 'bread',   label: 'パン',     icon: '🍞' },
+      { id: 'soup',    label: 'スープ',   icon: '🍲' },
+      { id: 'salad',   label: 'サラダ',   icon: '🥗' },
+      { id: 'any',     label: 'なんでも', icon: '✨' },
+    ];
+
+    const MOODS = [
+      { id: 'hot',    label: 'あったかい', icon: '🔥' },
+      { id: 'cold',   label: 'つめたい',   icon: '❄️' },
+      { id: 'spicy',  label: '辛い',       icon: '🌶️' },
+      { id: 'light',  label: 'さっぱり',   icon: '🌿' },
+      { id: 'hearty', label: 'がっつり',   icon: '💪' },
+      { id: 'mild',   label: 'あっさり',   icon: '🌸' },
+      { id: 'sweet',  label: '甘い',       icon: '🍯' },
+    ];
+
+    const INGREDIENT_GROUPS = [
+      {
+        label: '主食',
+        items: ['ご飯', 'パン', '麺類', 'パスタ', 'そうめん', 'うどん'],
+      },
+      {
+        label: 'タンパク質',
+        items: ['卵', '鶏肉', '豚肉', '牛肉', 'ツナ缶', '納豆', '豆腐', 'ちくわ', 'ベーコン'],
+      },
+      {
+        label: '野菜',
+        items: ['玉ねぎ', 'キャベツ', '長ねぎ', 'にんじん', 'じゃがいも', 'トマト', 'きゅうり', 'レタス', 'もやし', 'ほうれん草'],
+      },
+      {
+        label: '冷蔵庫の定番',
+        items: ['牛乳', 'チーズ', 'バター', 'マヨネーズ', '醤油', 'みそ', 'ケチャップ'],
+      },
+    ];
+
+    const DISHES = [
+      {
+        id: 'tkg',
+        name: '卵かけご飯',
+        emoji: '🍳',
+        genre: 'rice',
+        mealTimes: ['breakfast', 'lunch', 'dinner'],
+        cookTime: 5,
+        desc: '最速・最高。シンプルだけど奥が深い定番朝ごはん。',
+        ingredients: ['ご飯', '卵', '醤油'],
+        moods: ['hot', 'mild', 'light'],
+        recipe: [
+          '温かいご飯を茶碗によそう',
+          '生卵を割り入れる',
+          '醤油を少量まわしかけてよく混ぜる',
+          'お好みでねぎや海苔をトッピング',
+        ],
+      },
+      {
+        id: 'natto',
+        name: '納豆ご飯',
+        emoji: '🍚',
+        genre: 'rice',
+        mealTimes: ['breakfast', 'lunch', 'dinner'],
+        cookTime: 5,
+        desc: '手間ゼロ・栄養満点。お腹にやさしい最強セット。',
+        ingredients: ['ご飯', '納豆', '醤油'],
+        moods: ['hot', 'mild', 'light'],
+        recipe: [
+          '温かいご飯を茶碗によそう',
+          '納豆をタレ・からしと一緒によく混ぜる',
+          'ご飯の上に納豆をのせて醤油をかける',
+        ],
+      },
+      {
+        id: 'toast',
+        name: 'バタートースト',
+        emoji: '🍞',
+        genre: 'bread',
+        mealTimes: ['breakfast', 'snack'],
+        cookTime: 5,
+        desc: 'シンプル is best。外サク中ふわの王道トースト。',
+        ingredients: ['パン', 'バター'],
+        moods: ['hot', 'mild'],
+        recipe: [
+          'パンをトースターで2〜3分焼く',
+          '熱いうちにバターをたっぷり塗る',
+          'お好みでジャムや蜂蜜を添える',
+        ],
+      },
+      {
+        id: 'french-toast',
+        name: 'フレンチトースト',
+        emoji: '🍳',
+        genre: 'bread',
+        mealTimes: ['breakfast', 'snack'],
+        cookTime: 15,
+        desc: 'ふわとろの食感が最高。卵液にひと晩漬けるとさらに絶品。',
+        ingredients: ['パン', '卵', '牛乳', 'バター'],
+        moods: ['hot', 'sweet'],
+        recipe: [
+          'ボウルに卵・牛乳・砂糖を混ぜ卵液を作る',
+          'パンを卵液に10分以上浸す',
+          'バターを熱したフライパンで両面を弱火でじっくり焼く',
+          '砂糖を入れない場合はシロップやはちみつを添えて完成',
+        ],
+      },
+      {
+        id: 'somen',
+        name: 'そうめん',
+        emoji: '🍜',
+        genre: 'noodles',
+        mealTimes: ['lunch', 'dinner'],
+        cookTime: 10,
+        desc: '茹でるだけで完成。夏はキンキンに冷やして。',
+        ingredients: ['そうめん', '醤油'],
+        moods: ['cold', 'light', 'mild'],
+        recipe: [
+          '鍋にたっぷりのお湯を沸かしそうめんを2分茹でる',
+          '茹で上がったら冷水でよくしめる',
+          'めんつゆを水で薄めてつけ汁を作る',
+          '薬味（ねぎ・しょうが・みょうが）を用意して完成',
+        ],
+      },
+      {
+        id: 'instant-ramen',
+        name: 'インスタントラーメン',
+        emoji: '🍜',
+        genre: 'noodles',
+        mealTimes: ['lunch', 'dinner', 'snack'],
+        cookTime: 5,
+        desc: 'つかれた日の救世主。卵を落とすだけで格段においしくなる。',
+        ingredients: ['麺類', '卵'],
+        moods: ['hot', 'hearty', 'spicy'],
+        recipe: [
+          '鍋に記載の量の水を入れて沸かす',
+          '麺を入れて規定時間茹でる',
+          'スープの素を入れ、お好みで卵を落とす',
+          '器に盛ってねぎやのりをトッピング',
+        ],
+      },
+      {
+        id: 'udon',
+        name: 'ぶっかけうどん',
+        emoji: '🍜',
+        genre: 'noodles',
+        mealTimes: ['lunch', 'dinner'],
+        cookTime: 10,
+        desc: 'もちもち食感がたまらない。冷やしでも温かくても。',
+        ingredients: ['うどん', '醤油', '長ねぎ'],
+        moods: ['hot', 'cold', 'mild'],
+        recipe: [
+          'うどんを袋の指示通りに茹でる（または温める）',
+          '冷水でしめるか、温かいままにする',
+          'めんつゆをかけ、ねぎや卵黄をトッピング',
+          'お好みで天かす・わかめをのせて完成',
+        ],
+      },
+      {
+        id: 'tuna-pasta',
+        name: 'ツナパスタ',
+        emoji: '🍝',
+        genre: 'noodles',
+        mealTimes: ['lunch', 'dinner'],
+        cookTime: 15,
+        desc: '缶詰だけで本格的な一皿。和風にも洋風にもアレンジ自在。',
+        ingredients: ['パスタ', 'ツナ缶', '醤油', 'バター'],
+        moods: ['hot', 'mild', 'light'],
+        recipe: [
+          'パスタを袋の指示通りに塩茹でする',
+          'フライパンにツナ缶（油ごと）を入れて炒める',
+          '茹で上がったパスタを加えてバター・醤油で味付け',
+          '刻み海苔・ねぎを散らして完成',
+        ],
+      },
+      {
+        id: 'yakisoba',
+        name: '焼きそば',
+        emoji: '🍜',
+        genre: 'noodles',
+        mealTimes: ['lunch', 'dinner'],
+        cookTime: 15,
+        desc: 'ソースの香りで食欲全開。具材はなんでも入れてOK。',
+        ingredients: ['麺類', '豚肉', 'キャベツ', '長ねぎ'],
+        moods: ['hot', 'hearty'],
+        recipe: [
+          'フライパンに油を熱し豚肉を炒める',
+          'キャベツ・人参・玉ねぎなど野菜を加えて炒める',
+          '蒸し焼きそばを加えほぐしながら炒める',
+          'ソースを絡め紅しょうが・青のりをかけて完成',
+        ],
+      },
+      {
+        id: 'chahan',
+        name: 'チャーハン',
+        emoji: '🍳',
+        genre: 'rice',
+        mealTimes: ['lunch', 'dinner'],
+        cookTime: 15,
+        desc: '冷ご飯の救済策。強火でパラパラに仕上げるのがコツ。',
+        ingredients: ['ご飯', '卵', '長ねぎ', '醤油'],
+        moods: ['hot', 'hearty'],
+        recipe: [
+          '卵をご飯に絡めてパラパラになるよう混ぜておく',
+          '強火で熱したフライパンにサラダ油を入れる',
+          '卵ご飯を投入し、手早くほぐしながら炒める',
+          'ねぎ・チャーシュー（あれば）を加え醤油・塩で味を整える',
+        ],
+      },
+      {
+        id: 'oyakodon',
+        name: '親子丼',
+        emoji: '🍗',
+        genre: 'rice',
+        mealTimes: ['lunch', 'dinner'],
+        cookTime: 20,
+        desc: '出汁の効いたトロトロ卵が絶品。丼の王様。',
+        ingredients: ['ご飯', '鶏肉', '卵', '玉ねぎ', '醤油'],
+        moods: ['hot', 'hearty', 'mild'],
+        recipe: [
+          '鶏もも肉は一口大に切り、玉ねぎは薄切りにする',
+          '小鍋に出汁・醤油・みりん・砂糖を入れて煮立てる',
+          '鶏肉・玉ねぎを加えて鶏肉に火が通るまで煮る',
+          '溶き卵を回し入れ、半熟になったら火を止めてご飯にのせる',
+        ],
+      },
+      {
+        id: 'gyudon',
+        name: '牛丼',
+        emoji: '🥩',
+        genre: 'rice',
+        mealTimes: ['lunch', 'dinner'],
+        cookTime: 20,
+        desc: 'コスパ最強・スピード飯。甘辛タレが食欲を刺激する。',
+        ingredients: ['ご飯', '牛肉', '玉ねぎ', '醤油'],
+        moods: ['hot', 'hearty'],
+        recipe: [
+          '玉ねぎを薄切りにし、出汁・醤油・みりん・砂糖で煮る',
+          '牛バラ薄切り肉を加えてさっと煮る',
+          'ご飯の上に盛り付け、紅しょうが・七味で完成',
+        ],
+      },
+      {
+        id: 'omurice',
+        name: 'オムライス',
+        emoji: '🍳',
+        genre: 'rice',
+        mealTimes: ['lunch', 'dinner'],
+        cookTime: 25,
+        desc: 'ふわとろ卵をのせたハッピーな一皿。子どもも大人も大好き。',
+        ingredients: ['ご飯', '卵', '鶏肉', '玉ねぎ', 'ケチャップ', 'バター'],
+        moods: ['hot', 'hearty', 'sweet'],
+        recipe: [
+          'フライパンでバターを熱し、鶏肉と玉ねぎを炒める',
+          'ご飯を加えてケチャップで味付けし、ケチャップライスを作る',
+          '別のフライパンでバターを溶かし、溶き卵を流し入れる',
+          'まだ半熟のうちにケチャップライスを包み、ケチャップをかける',
+        ],
+      },
+      {
+        id: 'curry',
+        name: 'カレーライス',
+        emoji: '🍛',
+        genre: 'rice',
+        mealTimes: ['lunch', 'dinner'],
+        cookTime: 40,
+        desc: '翌日はもっとおいしい魔法の料理。作り置きにも最適。',
+        ingredients: ['ご飯', '鶏肉', '玉ねぎ', 'にんじん', 'じゃがいも'],
+        moods: ['hot', 'hearty', 'spicy'],
+        recipe: [
+          '具材を一口大に切り、フライパンで炒める',
+          '水を加えて野菜が柔らかくなるまで20分煮込む',
+          'カレールーを割り入れてとろみがつくまで10分煮る',
+          'ご飯の上にかけて完成（福神漬けを添えると◎）',
+        ],
+      },
+      {
+        id: 'sandwich',
+        name: 'サンドイッチ',
+        emoji: '🥪',
+        genre: 'bread',
+        mealTimes: ['breakfast', 'lunch', 'snack'],
+        cookTime: 15,
+        desc: '具材自由自在。ピクニックにも弁当にも。',
+        ingredients: ['パン', '卵', 'レタス', 'トマト', 'マヨネーズ'],
+        moods: ['cold', 'light', 'mild'],
+        recipe: [
+          '卵をゆで卵にし、マヨネーズで和えてエッグサラダを作る',
+          'パンの片面にバターやマスタードを塗る',
+          'レタス・トマト・卵サラダを重ねてはさむ',
+          '半分に切って完成',
+        ],
+      },
+      {
+        id: 'miso-soup',
+        name: 'みそ汁定食',
+        emoji: '🍲',
+        genre: 'soup',
+        mealTimes: ['breakfast', 'lunch', 'dinner'],
+        cookTime: 15,
+        desc: '朝の温かいみそ汁は心も胃も目覚めさせてくれる。',
+        ingredients: ['豆腐', '長ねぎ', 'みそ'],
+        moods: ['hot', 'mild', 'light'],
+        recipe: [
+          '鍋に水と出汁を入れて沸かす',
+          '豆腐を角切りに、わかめを水で戻す',
+          '豆腐とわかめを入れて火が通ったらみそを溶き入れる',
+          'ねぎを散らして完成（ご飯と一緒に）',
+        ],
+      },
+      {
+        id: 'tonjiru',
+        name: '豚汁',
+        emoji: '🍲',
+        genre: 'soup',
+        mealTimes: ['lunch', 'dinner'],
+        cookTime: 30,
+        desc: '根菜たっぷりのボリュームみそ汁。これだけでご馳走になる。',
+        ingredients: ['豚肉', 'にんじん', 'じゃがいも', '玉ねぎ', 'みそ'],
+        moods: ['hot', 'hearty'],
+        recipe: [
+          '豚バラ、にんじん、大根、じゃがいも、こんにゃくを切る',
+          'ごま油で豚肉と野菜を炒める',
+          '水を加えて野菜が柔らかくなるまで15分煮る',
+          'みそを溶き入れ、刻みねぎを散らして完成',
+        ],
+      },
+      {
+        id: 'caesar-salad',
+        name: 'シーザーサラダ',
+        emoji: '🥗',
+        genre: 'salad',
+        mealTimes: ['lunch', 'dinner', 'snack'],
+        cookTime: 10,
+        desc: 'ボリュームたっぷりの食べるサラダ。ダイエット中にも。',
+        ingredients: ['レタス', '卵', 'チーズ', 'マヨネーズ'],
+        moods: ['cold', 'light'],
+        recipe: [
+          'レタスを食べやすい大きさにちぎり冷水にさらす',
+          '卵を半熟ゆで卵にする（約6分）',
+          'マヨネーズ・レモン汁・粉チーズでドレッシングを作る',
+          'レタスに卵とドレッシングをかけて完成',
+        ],
+      },
+      {
+        id: 'hiyashi-chuka',
+        name: '冷やし中華',
+        emoji: '🍜',
+        genre: 'noodles',
+        mealTimes: ['lunch', 'dinner'],
+        cookTime: 15,
+        desc: '暑い夏に食べたくなる、具だくさんの冷たい麺。',
+        ingredients: ['麺類', '卵', 'きゅうり', 'トマト', 'ハム'],
+        moods: ['cold', 'light', 'mild'],
+        recipe: [
+          '中華麺を茹でて冷水でしっかりしめる',
+          '卵を薄焼きにして細切りにする（錦糸卵）',
+          'きゅうり・トマト・ハムを細切りにする',
+          '麺に具材を並べ、タレをかけて完成',
+        ],
+      },
+      {
+        id: 'okayuu',
+        name: 'おかゆ',
+        emoji: '🍚',
+        genre: 'rice',
+        mealTimes: ['breakfast', 'dinner'],
+        cookTime: 25,
+        desc: '体調が悪い日や胃を休めたい日に。やさしい味。',
+        ingredients: ['ご飯', '醤油'],
+        moods: ['hot', 'mild', 'light'],
+        recipe: [
+          '鍋にご飯と水（ご飯の5倍量）を入れて火にかける',
+          '沸騰したら弱火にしてふたをし15〜20分煮る',
+          '梅干しや塩昆布、ねぎをトッピング',
+        ],
+      },
+      {
+        id: 'tamagoyaki',
+        name: '卵焼き定食',
+        emoji: '🍳',
+        genre: 'rice',
+        mealTimes: ['breakfast', 'lunch'],
+        cookTime: 15,
+        desc: 'だし巻き卵とご飯とみそ汁。これが和の朝食の完成形。',
+        ingredients: ['ご飯', '卵', '醤油', 'みそ'],
+        moods: ['hot', 'mild'],
+        recipe: [
+          '卵2〜3個を割りほぐし、だし・砂糖・塩を加える',
+          '卵焼き器にサラダ油をひき、卵液を3回に分けて巻く',
+          'ご飯・みそ汁と一緒に盛り付けて完成',
+        ],
+      },
+      {
+        id: 'napolitano',
+        name: 'ナポリタン',
+        emoji: '🍝',
+        genre: 'noodles',
+        mealTimes: ['lunch', 'dinner'],
+        cookTime: 25,
+        desc: '昔懐かしい喫茶店の味。ケチャップの甘酸っぱさがクセになる。',
+        ingredients: ['パスタ', 'ベーコン', '玉ねぎ', 'ケチャップ', 'バター'],
+        moods: ['hot', 'hearty', 'sweet'],
+        recipe: [
+          'パスタを茹でる（少し固めに）',
+          'バターでベーコン・玉ねぎ・ピーマンを炒める',
+          'パスタを加えてケチャップで炒め合わせる',
+          '粉チーズをかけて完成',
+        ],
+      },
+    ];
+
+    // ============================================================
+    // STATE
+    // ============================================================
+    const STORAGE_KEY = 'kondou_app__ingredients';
+
+    /** localStorage から食材リストを安全に読み込む */
+    function loadIngredients() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        const parsed = JSON.parse(raw || '[]');
+        return Array.isArray(parsed) ? new Set(parsed) : new Set();
+      } catch {
+        return new Set(); // 読み込み失敗時は空で起動
+      }
+    }
+
+    const state = {
+      step: 1,          // 1〜5
+      mealTime: null,
+      energyLevel: 2,   // カード選択前のデフォルト値
+      genre: null,
+      moods: new Set(),
+      ingredients: loadIngredients(),
+      selectedDish: null,
+    };
+
+    function saveIngredients() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([...state.ingredients]));
+    }
+
+    // ============================================================
+    // FILTERING / SCORING
+    // ============================================================
+    function getRecommendations() {
+      const maxTime = ENERGY_LEVELS.find(e => e.id === state.energyLevel)?.maxMin ?? 999;
+
+      return DISHES
+        .filter(d => {
+          if (!d.mealTimes.includes(state.mealTime)) return false;
+          if (d.cookTime > maxTime) return false;
+          if (state.genre !== 'any' && d.genre !== state.genre) return false;
+          return true;
+        })
+        .map(d => {
+          // 食材スコア
+          const matchCount = d.ingredients.filter(i => state.ingredients.has(i)).length;
+          const ingScore = matchCount / Math.max(d.ingredients.length, 1);
+          const fullMatch = d.ingredients.every(i => state.ingredients.has(i));
+          // 気分スコア（選択時のみ加算）
+          let moodScore = 0;
+          if (state.moods.size > 0) {
+            const dishMoods = d.moods || [];
+            const hit = [...state.moods].filter(m => dishMoods.includes(m)).length;
+            moodScore = hit / state.moods.size;
+          }
+          return { ...d, score: ingScore + moodScore, matchCount, fullMatch };
+        })
+        .sort((a, b) => b.score - a.score || a.cookTime - b.cookTime);
+    }
+
+    // ============================================================
+    // SANITIZE helper (prevent XSS when rendering user strings)
+    // ============================================================
+    function sanitize(str) {
+      const el = document.createElement('span');
+      el.textContent = str;
+      return el.innerHTML;
+    }
+
+    // ============================================================
+    // RENDER
+    // ============================================================
+    const app = document.getElementById('app');
+    const modalRoot = document.getElementById('modal-root');
+
+    function render() {
+      app.innerHTML = '';
+      const wrapper = document.createElement('div');
+
+      // Progress bar (steps 1-4 = wizard, step 5 = results)
+      const totalSteps = 5;
+      const pb = document.createElement('nav');
+      pb.className = 'progress-bar';
+      pb.setAttribute('aria-label', 'ステップの進捗');
+      for (let i = 1; i <= totalSteps; i++) {
+        const s = document.createElement('span');
+        if (i < state.step)       s.className = 'done';
+        else if (i === state.step) s.className = 'active';
+        pb.appendChild(s);
+      }
+      wrapper.appendChild(pb);
+
+      // Step content
+      const card = document.createElement('div');
+      card.className = 'step';
+
+      if (state.step === 1) renderStep1(card);
+      else if (state.step === 2) renderStep2(card);
+      else if (state.step === 3) renderStep3(card);
+      else if (state.step === 4) renderStep4(card);
+      else if (state.step === 5) renderStep5(card);
+
+      wrapper.appendChild(card);
+      app.appendChild(wrapper);
+    }
+
+    // ─── Step 1: Meal time ─────────────────────────────────────
+    function renderStep1(card) {
+      addStepHeader(card, 'Step 1', 'いつ食べますか？', '');
+      const grid = document.createElement('div');
+      grid.className = 'options-grid col2';
+      MEAL_TIMES.forEach(mt => {
+        const opt = createOptionCard(mt.icon, mt.label, mt.desc,
+          state.mealTime === mt.id,
+          () => { state.mealTime = mt.id; goTo(2); }
+        );
+        grid.appendChild(opt);
+      });
+      card.appendChild(grid);
+    }
+
+    // ─── Step 2: Energy level (cards) ─────────────────────────
+    function renderStep2(card) {
+      addStepHeader(card, 'Step 2', '今の元気レベルは？', '調理時間の目安が変わります');
+      const grid = document.createElement('div');
+      grid.className = 'options-grid col2';
+      ENERGY_LEVELS.forEach(el => {
+        const opt = createOptionCard(el.icon, el.label, el.desc,
+          state.energyLevel === el.id,
+          () => {
+            state.energyLevel = el.id;
+            if (el.id === 1) {
+              // ぐったり → 優しいコメントを見せてから次へ
+              showGuttariMessage(card, () => goTo(3));
+            } else {
+              goTo(3);
+            }
+          }
+        );
+        grid.appendChild(opt);
+      });
+      card.appendChild(grid);
+      addBackButton(card);
+    }
+
+    function showGuttariMessage(card, onNext) {
+      // カードを一時的にコメント表示に切り替える
+      card.innerHTML = '';
+      card.style.display = 'flex';
+      card.style.flexDirection = 'column';
+      card.style.alignItems = 'center';
+      card.style.justifyContent = 'center';
+      card.style.gap = '24px';
+      card.style.padding = '48px 24px';
+
+      const emoji = document.createElement('div');
+      emoji.textContent = '😮‍💨';
+      emoji.style.cssText = 'font-size:3.5rem; line-height:1;';
+
+      const msg = document.createElement('p');
+      msg.textContent = 'お疲れさま！たまにはUberでもいいんじゃない？';
+      msg.style.cssText = `
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text);
+        text-align: center;
+        line-height: 1.6;
+        max-width: 240px;
+      `;
+
+      const sub = document.createElement('p');
+      sub.textContent = 'それでも何か作るなら…';
+      sub.style.cssText = 'font-size:0.78rem; color:var(--muted); font-weight:500;';
+
+      const btn = document.createElement('button');
+      btn.textContent = 'いや、作る！ →';
+      btn.style.cssText = `
+        margin-top: 8px;
+        padding: 14px 32px;
+        background: var(--primary);
+        color: #fff;
+        border: none;
+        border-radius: var(--radius);
+        font-family: var(--font);
+        font-size: 0.9rem;
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: var(--neu-sm);
+        transition: var(--transition);
+      `;
+      btn.addEventListener('click', onNext);
+
+      card.appendChild(emoji);
+      card.appendChild(msg);
+      card.appendChild(sub);
+      card.appendChild(btn);
+    }
+
+    // ─── Step 3: Genre + Mood ──────────────────────────────────
+    function renderStep3(card) {
+      addStepHeader(card, 'Step 3', 'ジャンルと気分は？', 'ジャンルをひとつ選んで、気分も追加できます');
+
+      // ── Genre grid ──
+      const genreTitle = document.createElement('p');
+      genreTitle.className = 'ing-group-title';
+      genreTitle.textContent = 'ジャンル（必須）';
+      card.appendChild(genreTitle);
+
+      const grid = document.createElement('div');
+      grid.className = 'options-grid col3';
+
+      // next button reference needed inside click handler
+      let nextBtn;
+
+      GENRES.forEach(g => {
+        const opt = createOptionCard(g.icon, g.label, '',
+          state.genre === g.id,
+          () => {
+            state.genre = g.id;
+            // update selected state on all genre cards
+            grid.querySelectorAll('.option-card').forEach((c, i) => {
+              const sel = GENRES[i].id === g.id;
+              c.classList.toggle('selected', sel);
+              c.setAttribute('aria-pressed', sel ? 'true' : 'false');
+            });
+            if (nextBtn) nextBtn.disabled = false;
+          }
+        );
+        grid.appendChild(opt);
+      });
+      card.appendChild(grid);
+
+      // ── Mood chips ──
+      const moodTitle = document.createElement('p');
+      moodTitle.className = 'mood-section-title';
+      moodTitle.textContent = '今の気分（複数選べます・任意）';
+      card.appendChild(moodTitle);
+
+      const moodChips = document.createElement('div');
+      moodChips.className = 'chips';
+      MOODS.forEach(m => {
+        const chip = document.createElement('button');
+        chip.className = 'chip' + (state.moods.has(m.id) ? ' selected' : '');
+        chip.textContent = `${m.icon} ${m.label}`;
+        chip.setAttribute('aria-pressed', state.moods.has(m.id) ? 'true' : 'false');
+        chip.addEventListener('click', () => {
+          if (state.moods.has(m.id)) state.moods.delete(m.id);
+          else state.moods.add(m.id);
+          chip.classList.toggle('selected');
+          chip.setAttribute('aria-pressed', state.moods.has(m.id) ? 'true' : 'false');
+        });
+        moodChips.appendChild(chip);
+      });
+      card.appendChild(moodChips);
+
+      // ── Nav ──
+      const nav = document.createElement('div');
+      nav.className = 'nav-row';
+      const backBtn = createBackBtn();
+      nextBtn = document.createElement('button');
+      nextBtn.className = 'btn-next';
+      nextBtn.textContent = '次へ →';
+      nextBtn.disabled = !state.genre;
+      nextBtn.addEventListener('click', () => { if (state.genre) goTo(4); });
+      nav.appendChild(backBtn);
+      nav.appendChild(nextBtn);
+      card.appendChild(nav);
+    }
+
+    // ─── Step 4: Ingredients ───────────────────────────────────
+    function renderStep4(card) {
+      addStepHeader(card, 'Step 4', '冷蔵庫に何がある？', 'あてはまる食材をタップ（スキップもできます）');
+
+      // ── Custom ingredient input (先頭に配置) ──
+      const customRow = document.createElement('div');
+      customRow.className = 'custom-row';
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.placeholder = 'その他の食材を追加…';
+      input.maxLength = 20;
+      input.setAttribute('aria-label', 'カスタム食材の入力');
+      const addBtn = document.createElement('button');
+      addBtn.textContent = '追加';
+      addBtn.setAttribute('aria-label', '食材を追加する');
+      function addCustom() {
+        const val = input.value.trim().slice(0, 20);
+        if (!val) return;
+        state.ingredients.add(val);
+        saveIngredients();
+        input.value = '';
+        // re-render
+        card.innerHTML = '';
+        renderStep4(card);
+      }
+      addBtn.addEventListener('click', addCustom);
+      input.addEventListener('keydown', e => { if (e.key === 'Enter') addCustom(); });
+      customRow.appendChild(input);
+      customRow.appendChild(addBtn);
+      card.appendChild(customRow);
+
+      INGREDIENT_GROUPS.forEach(group => {
+        const title = document.createElement('p');
+        title.className = 'ing-group-title';
+        title.textContent = group.label;
+        card.appendChild(title);
+
+        const chips = document.createElement('div');
+        chips.className = 'chips';
+        group.items.forEach(item => {
+          const chip = document.createElement('button');
+          chip.className = 'chip' + (state.ingredients.has(item) ? ' selected' : '');
+          chip.textContent = item;
+          chip.setAttribute('aria-pressed', state.ingredients.has(item) ? 'true' : 'false');
+          chip.addEventListener('click', () => {
+            if (state.ingredients.has(item)) state.ingredients.delete(item);
+            else state.ingredients.add(item);
+            saveIngredients();
+            // toggle without full re-render
+            chip.classList.toggle('selected');
+            chip.setAttribute('aria-pressed', state.ingredients.has(item) ? 'true' : 'false');
+          });
+          chips.appendChild(chip);
+        });
+        card.appendChild(chips);
+      });
+
+      const nav = document.createElement('div');
+      nav.className = 'nav-row';
+      const backBtn = createBackBtn();
+      const nextBtn = document.createElement('button');
+      nextBtn.className = 'btn-next';
+      nextBtn.textContent = '献立を探す 🍽️';
+      nextBtn.addEventListener('click', () => goTo(5));
+      nav.appendChild(backBtn);
+      nav.appendChild(nextBtn);
+      card.appendChild(nav);
+    }
+
+    // ─── Step 5: Results ───────────────────────────────────────
+    function renderStep5(card) {
+      const recs = getRecommendations();
+      const energy = ENERGY_LEVELS.find(e => e.id === state.energyLevel);
+      const mealTime = MEAL_TIMES.find(m => m.id === state.mealTime);
+
+      addStepHeader(card, '献立の提案',
+        `${mealTime?.icon || ''} ${mealTime?.label || ''}のメニュー`,
+        `${energy?.desc || ''} · ${recs.length}件見つかりました`
+      );
+
+      if (recs.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'no-results';
+        const ico = document.createElement('span');
+        ico.className = 'nr-icon';
+        ico.textContent = '🤔';
+        const msg = document.createElement('p');
+        msg.textContent = 'ぴったりのメニューが見つかりませんでした。ジャンルを「なんでも」にして再挑戦してみてください。';
+        empty.appendChild(ico);
+        empty.appendChild(msg);
+        card.appendChild(empty);
+      } else {
+        const grid = document.createElement('div');
+        grid.className = 'results-grid';
+        recs.forEach(dish => {
+          const dc = document.createElement('button');
+          dc.className = 'dish-card';
+          dc.setAttribute('aria-label', `${dish.name}、調理時間${dish.cookTime}分`);
+
+          if (dish.fullMatch && state.ingredients.size > 0) {
+            const badge = document.createElement('span');
+            badge.className = 'd-match';
+            badge.textContent = '✓ 揃ってる';
+            dc.appendChild(badge);
+          }
+
+          const emoji = document.createElement('span');
+          emoji.className = 'd-emoji';
+          emoji.textContent = dish.emoji;
+          emoji.setAttribute('aria-hidden', 'true');
+
+          const name = document.createElement('p');
+          name.className = 'd-name';
+          name.textContent = dish.name;  // textContent = XSS-safe
+
+          const time = document.createElement('span');
+          time.className = 'd-time';
+          time.textContent = `⏱ 約${dish.cookTime}分`;
+
+          dc.appendChild(emoji);
+          dc.appendChild(name);
+          dc.appendChild(time);
+          dc.addEventListener('click', () => openModal(dish));
+          grid.appendChild(dc);
+        });
+        card.appendChild(grid);
+      }
+
+      const nav = document.createElement('div');
+      nav.className = 'nav-row';
+      const backBtn = createBackBtn();
+      const restartBtn = document.createElement('button');
+      restartBtn.className = 'btn-restart';
+      restartBtn.textContent = '最初からやり直す';
+      restartBtn.addEventListener('click', () => {
+        state.step = 1; state.mealTime = null;
+        state.energyLevel = 2; state.genre = null;
+        state.moods = new Set();
+        render();
+      });
+      nav.appendChild(backBtn);
+      card.appendChild(nav);
+      card.appendChild(restartBtn);
+    }
+
+    // ============================================================
+    // MODAL
+    // ============================================================
+    function openModal(dish) {
+      state.selectedDish = dish;
+
+      const overlay = document.createElement('div');
+      overlay.className = 'modal-overlay';
+      overlay.setAttribute('role', 'dialog');
+      overlay.setAttribute('aria-modal', 'true');
+      overlay.setAttribute('aria-labelledby', 'modal-title');
+
+      const sheet = document.createElement('div');
+      sheet.className = 'modal-sheet';
+
+      // Close button
+      const closeBtn = document.createElement('button');
+      closeBtn.className = 'modal-close';
+      closeBtn.setAttribute('aria-label', '閉じる');
+      closeBtn.textContent = '✕';
+      closeBtn.addEventListener('click', closeModal);
+      sheet.appendChild(closeBtn);
+
+      const emoji = document.createElement('span');
+      emoji.className = 'modal-emoji';
+      emoji.setAttribute('aria-hidden', 'true');
+      emoji.textContent = dish.emoji;
+      sheet.appendChild(emoji);
+
+      const name = document.createElement('h2');
+      name.className = 'modal-name';
+      name.id = 'modal-title';
+      name.textContent = dish.name;  // textContent = XSS-safe
+      sheet.appendChild(name);
+
+      const meta = document.createElement('div');
+      meta.className = 'modal-meta';
+      [[`⏱ 約${dish.cookTime}分`, ''], [dish.desc, '']].forEach(([txt]) => {
+        if (!txt) return;
+        const tag = document.createElement('span');
+        tag.className = 'modal-tag';
+        tag.textContent = txt;
+        meta.appendChild(tag);
+      });
+      sheet.appendChild(meta);
+
+      // Ingredients
+      const ingTitle = document.createElement('p');
+      ingTitle.className = 'modal-section-title';
+      ingTitle.textContent = '材料';
+      sheet.appendChild(ingTitle);
+
+      const ingList = document.createElement('ul');
+      ingList.className = 'ing-list';
+      dish.ingredients.forEach(ing => {
+        const li = document.createElement('li');
+        li.textContent = ing;  // textContent
+        if (state.ingredients.has(ing)) li.classList.add('have');
+        ingList.appendChild(li);
+      });
+      sheet.appendChild(ingList);
+
+      // Recipe
+      const recTitle = document.createElement('p');
+      recTitle.className = 'modal-section-title';
+      recTitle.textContent = '作り方';
+      sheet.appendChild(recTitle);
+
+      const steps = document.createElement('ol');
+      steps.className = 'recipe-steps';
+      dish.recipe.forEach((step, i) => {
+        const li = document.createElement('li');
+        const num = document.createElement('span');
+        num.className = 'step-num';
+        num.textContent = String(i + 1);
+        num.setAttribute('aria-hidden', 'true');
+        const txt = document.createElement('span');
+        txt.textContent = step;  // textContent
+        li.appendChild(num);
+        li.appendChild(txt);
+        steps.appendChild(li);
+      });
+      sheet.appendChild(steps);
+
+      // ── External recipe links ──
+      const linkTitle = document.createElement('p');
+      linkTitle.className = 'modal-section-title';
+      linkTitle.textContent = 'レシピを探す';
+      sheet.appendChild(linkTitle);
+
+      const EXTERNAL_LINKS = [
+        {
+          label: 'DELISH KITCHEN',
+          icon: '🍴',
+          color: '#ff4c61',
+          url: (name) => `https://delishkitchen.tv/search?q=${encodeURIComponent(name)}`,
+        },
+        {
+          label: 'きょうの料理',
+          icon: '📺',
+          color: '#00a968',
+          url: (name) => `https://www.kyounoryouri.jp/search/recipe?keyword=${encodeURIComponent(name)}`,
+        },
+        {
+          label: 'YouTube',
+          icon: '▶',
+          color: '#ff0000',
+          url: (name) => `https://www.youtube.com/results?search_query=${encodeURIComponent(name + ' レシピ')}`,
+        },
+        {
+          label: 'Google検索',
+          icon: '🔍',
+          color: '#4285f4',
+          url: (name) => `https://www.google.com/search?q=${encodeURIComponent(name + ' レシピ')}`,
+        },
+      ];
+
+      const linkGrid = document.createElement('div');
+      linkGrid.className = 'ext-link-grid';
+      EXTERNAL_LINKS.forEach(site => {
+        const a = document.createElement('a');
+        a.className = 'ext-link-btn';
+        a.href = site.url(dish.name);
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.setAttribute('aria-label', `${dish.name}のレシピを${site.label}で探す`);
+        a.style.setProperty('--accent', site.color);
+
+        const iconEl = document.createElement('span');
+        iconEl.className = 'ext-link-icon';
+        iconEl.setAttribute('aria-hidden', 'true');
+        iconEl.textContent = site.icon;
+
+        const labelEl = document.createElement('span');
+        labelEl.textContent = site.label;
+
+        a.appendChild(iconEl);
+        a.appendChild(labelEl);
+        linkGrid.appendChild(a);
+      });
+      sheet.appendChild(linkGrid);
+
+      overlay.appendChild(sheet);
+
+      // Close on backdrop click
+      overlay.addEventListener('click', e => {
+        if (e.target === overlay) closeModal();
+      });
+
+      // Close on Escape
+      overlay._onKeydown = e => { if (e.key === 'Escape') closeModal(); };
+      document.addEventListener('keydown', overlay._onKeydown);
+
+      modalRoot.appendChild(overlay);
+      closeBtn.focus();
+    }
+
+    function closeModal() {
+      const overlay = modalRoot.querySelector('.modal-overlay');
+      if (overlay) {
+        document.removeEventListener('keydown', overlay._onKeydown);
+        modalRoot.removeChild(overlay);
+      }
+    }
+
+    // ============================================================
+    // HELPERS
+    // ============================================================
+    function addStepHeader(card, label, title, sub) {
+      const lEl = document.createElement('p');
+      lEl.className = 'step-label';
+      lEl.textContent = label;
+      card.appendChild(lEl);
+
+      const tEl = document.createElement('h1');
+      tEl.className = 'step-title';
+      tEl.textContent = title;
+      card.appendChild(tEl);
+
+      if (sub) {
+        const sEl = document.createElement('p');
+        sEl.className = 'step-sub';
+        sEl.textContent = sub;
+        card.appendChild(sEl);
+      }
+    }
+
+    function createOptionCard(icon, label, desc, selected, onClick) {
+      const card = document.createElement('button');
+      card.className = 'option-card' + (selected ? ' selected' : '');
+      card.setAttribute('aria-pressed', selected ? 'true' : 'false');
+
+      const iconEl = document.createElement('span');
+      iconEl.className = 'icon';
+      iconEl.setAttribute('aria-hidden', 'true');
+      iconEl.textContent = icon;
+
+      const labelEl = document.createElement('span');
+      labelEl.className = 'label';
+      labelEl.textContent = label;
+
+      card.appendChild(iconEl);
+      card.appendChild(labelEl);
+
+      if (desc) {
+        const metaEl = document.createElement('span');
+        metaEl.className = 'meta';
+        metaEl.textContent = desc;
+        card.appendChild(metaEl);
+      }
+
+      card.addEventListener('click', onClick);
+      return card;
+    }
+
+    function createBackBtn() {
+      const btn = document.createElement('button');
+      btn.className = 'btn-back';
+      btn.textContent = '← 戻る';
+      btn.addEventListener('click', () => goTo(state.step - 1));
+      return btn;
+    }
+
+    function addBackButton(card) {
+      const nav = document.createElement('div');
+      nav.className = 'nav-row';
+      nav.appendChild(createBackBtn());
+      card.appendChild(nav);
+    }
+
+    function goTo(step) {
+      state.step = step;
+      render();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // ============================================================
+    // INIT
+    // ============================================================
+    render();
+  </script>
+</body>
+</html>
